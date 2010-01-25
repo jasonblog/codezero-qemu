@@ -245,7 +245,7 @@ void arm_load_kernel(CPUState *env, struct arm_boot_info *info)
         exit(1);
     }
     info->entry = entry;
-    if (is_linux) {
+//    if (is_linux) {
         if (info->initrd_filename) {
             initrd_size = load_image_targphys(info->initrd_filename,
                                               info->loader_start
@@ -277,7 +277,7 @@ void arm_load_kernel(CPUState *env, struct arm_boot_info *info)
                                info->smp_loader_start);
         }
         info->initrd_size = initrd_size;
-    }
+//    }
     info->is_linux = is_linux;
     qemu_register_reset(main_cpu_reset, env);
 }
