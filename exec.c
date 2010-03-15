@@ -3671,6 +3671,22 @@ uint32_t ldl_phys(target_phys_addr_t addr)
     return val;
 }
 
+uint32_t *ldl_phys_ptr(target_phys_addr_t addr)
+{
+    unsigned long pd;
+    PhysPageDesc *p;
+
+    p = phys_page_find(addr >> TARGET_PAGE_BITS);
+    if (!p) {
+        pd = IO_MEM_UNASSIGNED;
+    } else {
+        pd = p->phys_offset;
+    }
+    /* RAM case */
+    return qemu_get_ram_ptr(pd & TARGET_PAGE_MASK) +
+            (addr & ~TARGET_PAGE_MASK);
+}
+
 /* warning: addr must be aligned */
 uint64_t ldq_phys(target_phys_addr_t addr)
 {

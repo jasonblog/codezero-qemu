@@ -104,6 +104,7 @@ void qemu_flush_coalesced_mmio_buffer(void);
 uint32_t ldub_phys(target_phys_addr_t addr);
 uint32_t lduw_phys(target_phys_addr_t addr);
 uint32_t ldl_phys(target_phys_addr_t addr);
+uint32_t *ldl_phys_ptr(target_phys_addr_t addr);
 uint64_t ldq_phys(target_phys_addr_t addr);
 void stl_phys_notdirty(target_phys_addr_t addr, uint32_t val);
 void stq_phys_notdirty(target_phys_addr_t addr, uint64_t val);

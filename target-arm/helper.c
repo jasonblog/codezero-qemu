@@ -1085,9 +1085,16 @@ static int get_phys_addr_v6(CPUState *env, uint32_t address, int access_type,
 
     /* The simplified model uses AP[0] as an access control bit.  */
     if ((env->cp15.c1_sys & (1 << 29)) && (ap & 1) == 0) {
-        /* Access flag fault.  */
-        code = (code == 15) ? 6 : 3;
-        goto do_fault;
+        /* Is hardware management enabled? */
+        if (!(env->cp15.c1_sys & (1 << 17))) {
+           /* No, access flag fault.  */
+           code = (code == 15) ? 6 : 3;
+           goto do_fault;
+       } else {
+            /* Set the access flag */
+           uint32_t *desc_ptr = ldl_phys_ptr(table);
+            *desc_ptr |= (1 << 10);
+       }
     }
     *prot = check_ap(env, ap, domain, access_type, is_user);
     if (!*prot) {
