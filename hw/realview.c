@@ -241,25 +241,38 @@ static void realview_init(ram_addr_t ram_size,
         pic[n] = qdev_get_gpio_in(dev, n);
     }
 
-    sysbus_create_simple("pl050_keyboard", 0x10006000, pic[20]);
-    sysbus_create_simple("pl050_mouse", 0x10007000, pic[21]);
+    if (is_pb && is_mpcore) {
+	sysbus_create_simple("pl050_keyboard", 0x10006000, pic[7]);
+	sysbus_create_simple("pl050_mouse", 0x10007000, pic[8]);
 
-    sysbus_create_simple("pl011", 0x10009000, pic[12]);
-    sysbus_create_simple("pl011", 0x1000a000, pic[13]);
-    sysbus_create_simple("pl011", 0x1000b000, pic[14]);
-    sysbus_create_simple("pl011", 0x1000c000, pic[15]);
+	sysbus_create_simple("pl011", 0x10009000, pic[4]);
+	sysbus_create_simple("pl011", 0x1000a000, pic[5]);
 
-    /* DMA controller is optional, apparently.  */
-    sysbus_create_simple("pl081", 0x10030000, pic[24]);
+	sysbus_create_simple("sp804", 0x10011000, pic[1]);
+	sysbus_create_simple("sp804", 0x10012000, pic[2]);
 
-    sysbus_create_simple("sp804", 0x10011000, pic[4]);
-    sysbus_create_simple("sp804", 0x10012000, pic[5]);
+	sysbus_create_simple("pl031", 0x10017000, pic[6]);
+    } else {
+    	sysbus_create_simple("pl050_keyboard", 0x10006000, pic[20]);
+    	sysbus_create_simple("pl050_mouse", 0x10007000, pic[21]);
 
-    sysbus_create_simple("pl110_versatile", 0x10020000, pic[23]);
+    	sysbus_create_simple("pl011", 0x10009000, pic[12]);
+    	sysbus_create_simple("pl011", 0x1000a000, pic[13]);
+    	sysbus_create_simple("pl011", 0x1000b000, pic[14]);
+    	sysbus_create_simple("pl011", 0x1000c000, pic[15]);
 
-    sysbus_create_varargs("pl181", 0x10005000, pic[17], pic[18], NULL);
+    	/* DMA controller is optional, apparently.  */
+    	sysbus_create_simple("pl081", 0x10030000, pic[24]);
 
-    sysbus_create_simple("pl031", 0x10017000, pic[10]);
+    	sysbus_create_simple("sp804", 0x10011000, pic[4]);
+    	sysbus_create_simple("sp804", 0x10012000, pic[5]);
+
+    	sysbus_create_simple("pl110_versatile", 0x10020000, pic[23]);
+
+    	sysbus_create_varargs("pl181", 0x10005000, pic[17], pic[18], NULL);
+
+    	sysbus_create_simple("pl031", 0x10017000, pic[10]);
+    }
 
     if (!is_pb) {
         dev = sysbus_create_varargs("realview_pci", 0x60000000,
