@@ -490,7 +490,7 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
     cpu_register_physical_memory(0x80000000, ram_size,
                                      ram_offset | IO_MEM_RAM);
 
-    sys_id = 0x01780500;
+    sys_id = 0x1190f500;
     arm_sysctl_init(0x10000000, sys_id, proc_id);
 
     dev = qdev_create(NULL, "a9mpcore_priv");
@@ -506,8 +506,8 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
         pic[n] = qdev_get_gpio_in(dev, n);
     }
 
-    sysbus_create_simple("pl050_keyboard", 0x10006000, pic[7]);
-    sysbus_create_simple("pl050_mouse", 0x10007000, pic[8]);
+    sysbus_create_simple("pl050_keyboard", 0x10006000, pic[12]);
+    sysbus_create_simple("pl050_mouse", 0x10007000, pic[13]);
 
     sysbus_create_simple("pl011", 0x10009000, pic[5]);
     sysbus_create_simple("pl011", 0x1000a000, pic[6]);
@@ -517,25 +517,17 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
     sysbus_create_simple("sp804", 0x10011000, pic[2]);
     sysbus_create_simple("sp804", 0x10012000, pic[3]);
 
-    sysbus_create_simple("pl031", 0x10017000, pic[6]);
+    sysbus_create_simple("pl031", 0x10017000, pic[4]); /* RTC */
 
-    /* FIXME - kbd/mouse base and irq */
-    sysbus_create_simple("pl050_keyboard", 0x10006000, pic[20]);
-    sysbus_create_simple("pl050_mouse", 0x10007000, pic[21]);
-
-    sysbUS_create_simple("pl110_versatile", 0x10020000, pic[23]); /* CLCD */
+    sysbUS_create_simple("pl110_versatile", 0x10020000, pic[14]); /* CLCD */
 
     for(n = 0; n < nb_nics; n++) {
          nd = &nd_table[n];
 
-         if ((!nd->model && !done_nic) || strcmp(nd->model, "lan9118") == 0)
-             lan9118_init(nd, 0x4e000000, pic[28]);
+         if ((!nd->model && !done_nic) || strcmp(nd->model, "lan9118") == 0)  /* Ethernet */
+             lan9118_init(nd, 0x1e000000, pic[15]);
 
     }
-
-     dev = sysbus_create_simple("realview_i2c", 0x10002000, NULL);
-     i2c = (i2c_bus *)qdev_get_child_bus(dev, "i2c");
-     i2c_create_slave(i2c, "ds1338", 0x68);
 
     /* ??? Hack to map an additional page of ram for the secondary CPU
        startup code.  I guess this works on real hardware because the
