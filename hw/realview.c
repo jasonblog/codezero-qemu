@@ -119,13 +119,15 @@ enum realview_board_type {
     BOARD_EB_MPCORE,
     BOARD_PB_A8,
     BOARD_PBX_A9,
+    BOARD_VX_A9,
 };
 
 static const int realview_board_id[] = {
     0x33b,
     0x33b,
     0x769,
-    0x76d
+    0x76d,
+    0x76e	/* FIXME:random value */
 };
 
 static void realview_init(ram_addr_t ram_size,
@@ -165,6 +167,8 @@ static void realview_init(ram_addr_t ram_size,
         is_mpcore = 1;
         is_pb = 1;
         break;
+    case BOARD_VX_A9:	/* silence stupid GCC */
+	break;
     }
     for (n = 0; n < smp_cpus; n++) {
         env = cpu_init(cpu_model);
@@ -429,6 +433,129 @@ static void realview_pbx_a9_init(ram_addr_t ram_size,
                   initrd_filename, cpu_model, BOARD_PBX_A9);
 }
 
+static void realview_vx_a9_init(ram_addr_t ram_size,
+                     const char *boot_device,
+                     const char *kernel_filename, const char *kernel_cmdline,
+                     const char *initrd_filename, const char *cpu_model)
+{
+   CPUState *env = NULL;
+    ram_addr_t ram_offset;
+    DeviceState *dev;
+    SysBusDevice *busdev;
+    qemu_irq *irqp;
+    qemu_irq pic[64];
+    NICInfo *nd;
+    i2c_bus *i2c;
+    int n;
+    int done_nic = 0;
+    qemu_irq cpu_irq[4];
+    uint32_t proc_id = 0;
+    uint32_t sys_id;
+    ram_addr_t low_ram_size;
+
+    if (!cpu_model) {
+        cpu_model = "cortex-a9";
+    }
+
+   for (n = 0; n < smp_cpus; n++) {
+        env = cpu_init(cpu_model);
+        if (!env) {
+            fprintf(stderr, "Unable to find CPU definition\n");
+            exit(1);
+        }
+        irqp = arm_pic_init_cpu(env);
+        cpu_irq[n] = irqp[ARM_PIC_CPU_IRQ];
+        if (n > 0) {
+            qemu_register_reset(secondary_cpu_reset, env);
+        }
+    }
+
+    proc_id = 0x0cffffff;
+
+    if (ram_size > 0x20000000) {
+        /* Core tile RAM.  */
+        low_ram_size = ram_size - 0x20000000;
+        ram_size = 0x20000000;
+        ram_offset = qemu_ram_alloc(low_ram_size);
+        cpu_register_physical_memory(0x20000000, low_ram_size,
+                                     ram_offset | IO_MEM_RAM);
+    }
+
+    ram_offset = qemu_ram_alloc(ram_size);
+    low_ram_size = ram_size;
+    if (low_ram_size > 0x20000000)
+      low_ram_size = 0x20000000;
+    /* SDRAM at address zero.  */
+    cpu_register_physical_memory(0, low_ram_size, ram_offset | IO_MEM_RAM);
+    cpu_register_physical_memory(0x80000000, ram_size,
+                                     ram_offset | IO_MEM_RAM);
+
+    sys_id = 0x01780500;
+    arm_sysctl_init(0x10000000, sys_id, proc_id);
+
+    dev = qdev_create(NULL, "a9mpcore_priv");
+    qdev_prop_set_uint32(dev, "num-cpu", smp_cpus);
+    qdev_init_nofail(dev);
+    busdev = sysbus_from_qdev(dev);
+    realview_binfo.smp_priv_base = 0x1e000000;
+    sysbus_mmio_map(busdev, 0, realview_binfo.smp_priv_base);
+    for (n = 0; n < smp_cpus; n++) {
+        sysbus_connect_irq(busdev, n, cpu_irq[n]);
+    }
+    for (n = 0; n < 64; n++) {
+        pic[n] = qdev_get_gpio_in(dev, n);
+    }
+
+    sysbus_create_simple("pl050_keyboard", 0x10006000, pic[7]);
+    sysbus_create_simple("pl050_mouse", 0x10007000, pic[8]);
+
+    sysbus_create_simple("pl011", 0x10009000, pic[5]);
+    sysbus_create_simple("pl011", 0x1000a000, pic[6]);
+    sysbus_create_simple("pl011", 0x1000b000, pic[7]);
+    sysbus_create_simple("pl011", 0x1000c000, pic[8]);
+
+    sysbus_create_simple("sp804", 0x10011000, pic[2]);
+    sysbus_create_simple("sp804", 0x10012000, pic[3]);
+
+    sysbus_create_simple("pl031", 0x10017000, pic[6]);
+
+    /* FIXME - kbd/mouse base and irq */
+    sysbus_create_simple("pl050_keyboard", 0x10006000, pic[20]);
+    sysbus_create_simple("pl050_mouse", 0x10007000, pic[21]);
+
+    sysbUS_create_simple("pl110_versatile", 0x10020000, pic[23]); /* CLCD */
+
+    for(n = 0; n < nb_nics; n++) {
+         nd = &nd_table[n];
+
+         if ((!nd->model && !done_nic) || strcmp(nd->model, "lan9118") == 0)
+             lan9118_init(nd, 0x4e000000, pic[28]);
+
+    }
+
+     dev = sysbus_create_simple("realview_i2c", 0x10002000, NULL);
+     i2c = (i2c_bus *)qdev_get_child_bus(dev, "i2c");
+     i2c_create_slave(i2c, "ds1338", 0x68);
+
+    /* ??? Hack to map an additional page of ram for the secondary CPU
+       startup code.  I guess this works on real hardware because the
+       BootROM happens to be in ROM/flash or in memory that isn't clobbered
+       until after Linux boots the secondary CPUs.  */
+    ram_offset = qemu_ram_alloc(0x1000);
+    cpu_register_physical_memory(SMP_BOOT_ADDR, 0x1000,
+                                 ram_offset | IO_MEM_RAM);
+
+    realview_binfo.ram_size = ram_size;
+    realview_binfo.kernel_filename = kernel_filename;
+    realview_binfo.kernel_cmdline = kernel_cmdline;
+    realview_binfo.initrd_filename = initrd_filename;
+    realview_binfo.nb_cpus = smp_cpus;
+    realview_binfo.board_id = realview_board_id[BOARD_VX_A9];
+    realview_binfo.loader_start = 0x70000000;
+    arm_load_kernel(first_cpu, &realview_binfo);
+}
+
+
 static QEMUMachine realview_eb_machine = {
     .name = "realview-eb",
     .desc = "ARM RealView Emulation Baseboard (ARM926EJ-S)",
@@ -458,13 +585,22 @@ static QEMUMachine realview_pbx_a9_machine = {
     .max_cpus = 4,
 };
 
+static QEMUMachine realview_vx_a9_machine = {
+    .name = "realview-vx-a9",
+    .desc = "ARM RealView Versatile Express for Cortex-A9",
+    .init = realview_vx_a9_init,
+    .use_scsi = 1,
+    .max_cpus = 4,
+};
+
 static void realview_machine_init(void)
 {
     qemu_register_machine(&realview_eb_machine);
     qemu_register_machine(&realview_eb_mpcore_machine);
     qemu_register_machine(&realview_pb_a8_machine);
     qemu_register_machine(&realview_pbx_a9_machine);
+    qemu_register_machine(&realview_vx_a9_machine);
 }
 
 machine_init(realview_machine_init);
-device_init(realview_register_devices)
+DEVICE_INit(realview_register_devices)
