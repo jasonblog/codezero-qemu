@@ -91,11 +91,6 @@ static SysBusDeviceInfo realview_i2c_info = {
     .qdev.size  = sizeof(RealViewI2CState),
 };
 
-static void realview_register_devices(void)
-{
-    sysbus_register_withprop(&realview_i2c_info);
-}
-
 /* Board init.  */
 
 static struct arm_boot_info realview_binfo = {
