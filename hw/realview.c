@@ -518,13 +518,13 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
 
     sysbus_create_simple("pl031", 0x10017000, pic[4]); /* RTC */
 
-    sysbus_create_simple("pl110_versatile", 0x10020000, pic[14]); /* CLCD */
+    sysbus_create_simple("pl110_versatile", 0x1001f000, pic[14]); /* CLCD */
 
     for(n = 0; n < nb_nics; n++) {
          nd = &nd_table[n];
 
          if ((!nd->model && !done_nic) || strcmp(nd->model, "lan9118") == 0)  /* Ethernet */
-             lan9118_init(nd, 0x1e000000, pic[15]);
+             lan9118_init(nd, 0x4e000000, pic[15]);
 
     }
 
