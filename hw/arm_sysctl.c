@@ -109,6 +109,10 @@ static uint32_t arm_sysctl_read(void *opaque, target_phys_addr_t offset)
     case 0xc8: /* SYS_TEST_OSC2 */
     case 0xcc: /* SYS_TEST_OSC3 */
     case 0xd0: /* SYS_TEST_OSC4 */
+    case 0xa0:
+    case 0xa4:
+    case 0xa8:
+
         return 0;
     default:
         printf ("arm_sysctl_read: Bad register offset 0x%x\n", (int)offset);
@@ -183,7 +187,10 @@ static void arm_sysctl_write(void *opaque, target_phys_addr_t offset,
     case 0x94: /* OSCRESET2 */
     case 0x98: /* OSCRESET3 */
     case 0x9c: /* OSCRESET4 */
-        break;
+    case 0xa0:
+    case 0xa4:
+    case 0xa8:
+	break;
     default:
         printf ("arm_sysctl_write: Bad register offset 0x%x\n", (int)offset);
         return;
