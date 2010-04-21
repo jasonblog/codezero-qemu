@@ -307,9 +307,9 @@ static void realview_init(ram_addr_t ram_size,
         }
     }
 
-    dev = sysbus_create_simple("realview_i2c", 0x10002000, NULL);
-    i2c = (i2c_bus *)qdev_get_child_bus(dev, "i2c");
-    i2c_create_slave(i2c, "ds1338", 0x68);
+    //dev = sysbus_create_simple("realview_i2c", 0x10002000, NULL);
+    //i2c = (i2c_bus *)qdev_get_child_bus(dev, "i2c");
+    //i2c_create_slave(i2c, "ds1338", 0x68);
 
     /* Memory map for RealView Emulation Baseboard:  */
     /* 0x10000000 System registers.  */
@@ -482,11 +482,11 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
 
     ram_offset = qemu_ram_alloc(ram_size);
     low_ram_size = ram_size;
-    if (low_ram_size > 0x20000000)
-      low_ram_size = 0x20000000;
+    if (low_ram_size > 0x10000000)
+      low_ram_size = 0x10000000;
     /* SDRAM at address zero.  */
-    cpu_register_physical_memory(0, low_ram_size, ram_offset | IO_MEM_RAM);
-    cpu_register_physical_memory(0x80000000, ram_size,
+    cpu_register_physical_memory(0x0, low_ram_size, ram_offset | IO_MEM_RAM);
+    cpu_register_physical_memory(0x60000000, ram_size,
                                      ram_offset | IO_MEM_RAM);
 
     sys_id = 0x1190f500;
@@ -542,7 +542,7 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
     realview_binfo.initrd_filename = initrd_filename;
     realview_binfo.nb_cpus = smp_cpus;
     realview_binfo.board_id = realview_board_id[BOARD_VX_A9];
-    realview_binfo.loader_start = 0x70000000;
+    realview_binfo.loader_start = 0x60000000;
     arm_load_kernel(first_cpu, &realview_binfo);
 }
 
