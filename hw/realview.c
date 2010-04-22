@@ -435,6 +435,7 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
 {
    CPUState *env = NULL;
     ram_addr_t ram_offset;
+    ram_addr_t video_ram_offset;
     DeviceState *dev;
     SysBusDevice *busdev;
     qemu_irq *irqp;
@@ -484,6 +485,8 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
     cpu_register_physical_memory(0x80000000, ram_size,
                                      ram_offset | IO_MEM_RAM);
 
+    video_ram_offset = qemu_ram_alloc(0x1000000);
+    cpu_register_physical_memory(0x4c000000, 0x1000000, video_ram_offset | IO_MEM_RAM);
     sys_id = 0x1190f500;
     arm_sysctl_init(0x10000000, sys_id, proc_id);
 

@@ -239,6 +239,7 @@ static uint32_t pl110_read(void *opaque, target_phys_addr_t offset)
     if (offset >= 0x200 && offset < 0x400) {
         return s->raw_pallette[(offset - 0x200) >> 2];
     }
+
     switch (offset >> 2) {
     case 0: /* LCDTiming0 */
         return s->timing[0];
@@ -291,6 +292,7 @@ static void pl110_write(void *opaque, target_phys_addr_t offset,
         pl110_update_pallette(s, n);
         return;
     }
+
     switch (offset >> 2) {
     case 0: /* LCDTiming0 */
         s->timing[0] = val;
@@ -365,11 +367,13 @@ static int pl110_init(SysBusDevice *dev)
                                  pl110_invalidate_display,
                                  NULL, NULL, s);
     /* ??? Save/restore.  */
+
     return 0;
 }
 
 static int pl110_versatile_init(SysBusDevice *dev)
 {
+
     pl110_state *s = FROM_SYSBUS(pl110_state, dev);
     s->versatile = 1;
     return pl110_init(dev);
