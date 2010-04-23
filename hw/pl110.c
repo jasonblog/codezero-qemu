@@ -31,6 +31,9 @@ typedef struct {
     SysBusDevice busdev;
     DisplayState *ds;
 
+    /* Check if weuse pl111 instead of pl110 */
+    int  using_pl111;
+
     /* The Versatile/PB uses a slightly modified PL110 controller.  */
     int versatile;
     uint32_t timing[4];
@@ -239,7 +242,6 @@ static uint32_t pl110_read(void *opaque, target_phys_addr_t offset)
     if (offset >= 0x200 && offset < 0x400) {
         return s->raw_pallette[(offset - 0x200) >> 2];
     }
-
     switch (offset >> 2) {
     case 0: /* LCDTiming0 */
         return s->timing[0];
@@ -276,6 +278,72 @@ static uint32_t pl110_read(void *opaque, target_phys_addr_t offset)
     }
 }
 
+/*
+ * PL110 and PL111 has different bit manipulations for
+ * Control Register
+ */
+static void pl111_to_pl110_ctrlreg_map(unsigned int *pl111_ctrlreg)
+{
+	int bpp_pl111 = ((*pl111_ctrlreg) & (0x7 << 1)) >> 1;
+	(*pl111_ctrlreg) = (*pl111_ctrlreg) & (~(0x7 << 1));
+
+	/*
+	 * PL110 has bit[3:1] defined as
+	 * bits per pixel:
+	 * 000 = 1 bpp
+	 * 001 = 2 bpp
+	 * 010 = 4 bpp
+	 * 011 = 8 bpp
+	 * 100 = 16 bpp
+	 * 101 = 24 bpp (TFT panel only)
+	 * 110 = reserved
+	 * 111 = reserved.
+	 */
+
+	/*
+	 * PL111 has bit[3:1] defined as
+	 * LCD bits per pixel:
+	 * b000 = 1bpp
+	 * b001 = 2bpp
+	 * b010 = 4bpp
+	 * b011 = 8bpp
+	 * b100 = 16bpp
+	 * b101 = 24bpp (TFT panel only)
+	 * b110 = 16bpp 5:6:5 mode
+	 * b111 = 12bpp 4:4:4 mode.
+	 */
+
+	int bpp_pl110 = 0;
+	switch (bpp_pl111) {
+	case 0:
+		bpp_pl110 = 0;
+		break;
+	case 1:
+		bpp_pl110 = 1;
+		break;
+	case 2:
+		bpp_pl110 = 2;
+		break;
+	case 3:
+		bpp_pl110 = 3;
+		break;
+	case 4:
+		bpp_pl110 = 4;
+		break;
+	case 5:
+		bpp_pl110 = 5;
+		break;
+	case 6:
+	case 7:
+		bpp_pl110 = 4;
+		break;
+	default:
+		hw_error("pl111 bpp value provided is not correct: %x\n", bpp_pl111);
+	}
+
+	(*pl111_ctrlreg) = (*pl111_ctrlreg) | (bpp_pl110 << 1);
+}
+
 static void pl110_write(void *opaque, target_phys_addr_t offset,
                         uint32_t val)
 {
@@ -292,7 +360,6 @@ static void pl110_write(void *opaque, target_phys_addr_t offset,
         pl110_update_pallette(s, n);
         return;
     }
-
     switch (offset >> 2) {
     case 0: /* LCDTiming0 */
         s->timing[0] = val;
@@ -327,7 +394,11 @@ static void pl110_write(void *opaque, target_phys_addr_t offset,
         if (s->versatile)
             goto imsc;
     control:
-        s->cr = val;
+
+	if(s->using_pl111)
+		pl111_to_pl110_ctrlreg_map(&val);
+
+	s->cr = val;
         s->bpp = (val >> 1) & 7;
         if (pl110_enabled(s)) {
             qemu_console_resize(s->ds, s->cols, s->rows);
@@ -367,7 +438,6 @@ static int pl110_init(SysBusDevice *dev)
                                  pl110_invalidate_display,
                                  NULL, NULL, s);
     /* ??? Save/restore.  */
-
     return 0;
 }
 
@@ -376,6 +446,7 @@ static int pl110_versatile_init(SysBusDevice *dev)
 
     pl110_state *s = FROM_SYSBUS(pl110_state, dev);
     s->versatile = 1;
+    s->using_pl111 = 1;
     return pl110_init(dev);
 }
 

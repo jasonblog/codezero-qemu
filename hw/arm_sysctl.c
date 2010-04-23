@@ -111,9 +111,9 @@ static uint32_t arm_sysctl_read(void *opaque, target_phys_addr_t offset)
     case 0xd0: /* SYS_TEST_OSC4 */
     case 0xa0:
     case 0xa4:
-    case 0xa8:
-
         return 0;
+    case 0xa8: /* SYSCFG_STATUS always return 1 for done */
+	return 1;
     default:
         printf ("arm_sysctl_read: Bad register offset 0x%x\n", (int)offset);
         return 0;
