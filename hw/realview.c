@@ -127,7 +127,7 @@ static const int realview_board_id[] = {
     0x33b,
     0x769,
     0x76d,
-    0x76e	/* FIXME:random value */
+    0x8e0
 };
 
 static void realview_init(ram_addr_t ram_size,
