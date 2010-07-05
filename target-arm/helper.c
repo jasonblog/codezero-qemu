@@ -104,7 +104,6 @@ static void cpu_reset_model_id(CPUARMState *env, uint32_t id)
         env->vfp.xregs[ARM_VFP_MVFR1] = 0x00011100;
         memcpy(env->cp15.c0_c1, cortexa8_cp15_c0_c1, 8 * sizeof(uint32_t));
         memcpy(env->cp15.c0_c2, cortexa8_cp15_c0_c2, 8 * sizeof(uint32_t));
-        env->cp15.c1_sys = (1 << 23) | (1 << 22) | (1 << 18) | (1 << 16) | (0xF << 3);
         env->cp15.c0_cachetype = 0x82048004;
         env->cp15.c0_clid = (1 << 27) | (2 << 24) | 3;
         env->cp15.c0_ccsid[0] = 0xe007e01a; /* 16k L1 dcache. */
@@ -127,7 +126,6 @@ static void cpu_reset_model_id(CPUARMState *env, uint32_t id)
         env->vfp.xregs[ARM_VFP_MVFR1] = 0x01111111;
         memcpy(env->cp15.c0_c1, cortexa9_cp15_c0_c1, 8 * sizeof(uint32_t));
         memcpy(env->cp15.c0_c2, cortexa9_cp15_c0_c2, 8 * sizeof(uint32_t));
-        env->cp15.c1_sys = (1 << 23) | (1 << 22) | (1 << 18) | (1 << 16) | (0xF << 3);
         env->cp15.c0_cachetype = 0x80038003;
         env->cp15.c0_clid = (1 << 27) | (1 << 24) | 3;
         env->cp15.c0_ccsid[0] = 0xe00fe015; /* 16k L1 dcache. */
