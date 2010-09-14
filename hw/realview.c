@@ -482,11 +482,15 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
       low_ram_size = 0x20000000;
     /* SDRAM at address zero.  */
     cpu_register_physical_memory(0, low_ram_size, ram_offset | IO_MEM_RAM);
-    cpu_register_physical_memory(0x80000000, ram_size,
+    cpu_register_physical_memory(0x60000000, ram_size,
                                      ram_offset | IO_MEM_RAM);
 
-    video_ram_offset = qemu_ram_alloc(0x1000000);
-    cpu_register_physical_memory(0x4c000000, 0x1000000, video_ram_offset | IO_MEM_RAM);
+#if 1
+    video_ram_offset = qemu_ram_alloc(0x500000);
+    cpu_register_physical_memory(0x1a00000, 0x500000, video_ram_offset | IO_MEM_RAM);
+    cpu_register_physical_memory(0x61a00000, 0x500000, video_ram_offset | IO_MEM_RAM);
+#endif
+
     sys_id = 0x1190f500;
     arm_sysctl_init(0x10000000, sys_id, proc_id);
 
@@ -516,7 +520,7 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
 
     sysbus_create_simple("pl031", 0x10017000, pic[4]); /* RTC */
 
-    sysbus_create_simple("pl110_versatile", 0x1001f000, pic[14]); /* CLCD */
+    sysbus_create_simple("pl110_versatile", 0x10020000, pic[14]); /* CLCD */
 
     for(n = 0; n < nb_nics; n++) {
          nd = &nd_table[n];

@@ -360,6 +360,21 @@ static void pl110_write(void *opaque, target_phys_addr_t offset,
         pl110_update_pallette(s, n);
         return;
     }
+#if 0
+    	fprintf(stdout, "==========CLCD Register=================\n");
+    	fprintf(stdout, "%x\n", pl110_read(opaque, 1 << 2));
+    	fprintf(stdout, "%x\n", pl110_read(opaque, 2 << 2));
+	fprintf(stdout, "%x\n", pl110_read(opaque, 3 << 2));
+	fprintf(stdout, "%x\n", pl110_read(opaque, 4 << 2));
+	fprintf(stdout, "%x\n", pl110_read(opaque, 5 << 2));
+	fprintf(stdout, "%x\n", pl110_read(opaque, 6 << 2));
+	fprintf(stdout, "%x\n", pl110_read(opaque, 7 << 2));
+	fprintf(stdout, "%x\n", pl110_read(opaque, 8 << 2));
+	fprintf(stdout, "%x\n", pl110_read(opaque, 9 << 2));
+	fprintf(stdout, "%x\n", pl110_read(opaque, 11 << 2));
+	fprintf(stdout, "%x\n", pl110_read(opaque, 12 << 2));
+	fprintf(stdout, "-------------------------\n");
+#endif
     switch (offset >> 2) {
     case 0: /* LCDTiming0 */
         s->timing[0] = val;
