@@ -31,6 +31,9 @@ typedef struct {
     SysBusDevice busdev;
     DisplayState *ds;
 
+    /* Check if weuse pl111 instead of pl110 */
+    int  using_pl111;
+
     /* The Versatile/PB uses a slightly modified PL110 controller.  */
     int versatile;
     uint32_t timing[4];
@@ -50,6 +53,72 @@ typedef struct {
 
 static const unsigned char pl110_id[] =
 { 0x10, 0x11, 0x04, 0x00, 0x0d, 0xf0, 0x05, 0xb1 };
+
+/*
+ * PL110 and PL111 has different bit manipulations for
+ * Control Register
+ */
+static void pl111_to_pl110_ctrlreg_map(unsigned int *pl111_ctrlreg)
+{
+	int bpp_pl111 = ((*pl111_ctrlreg) & (0x7 << 1)) >> 1;
+		(*pl111_ctrlreg) = (*pl111_ctrlreg) & (~(0x7 << 1));
+
+	/*
+	 * PL110 has bit[3:1] defined as
+	 * bits per pixel:
+	 * 000 = 1 bpp
+	 * 001 = 2 bpp
+	 * 010 = 4 bpp
+	 * 011 = 8 bpp
+	 * 100 = 16 bpp
+	 * 101 = 24 bpp (TFT panel only)
+	 * 110 = reserved
+	 * 111 = reserved.
+	 */
+
+	/*
+	 * PL111 has bit[3:1] defined as
+	 * LCD bits per pixel:
+	 * b000 = 1bpp
+	 * b001 = 2bpp
+	 * b010 = 4bpp
+	 * b011 = 8bpp
+	 * b100 = 16bpp
+	 * b101 = 24bpp (TFT panel only)
+	 * b110 = 16bpp 5:6:5 mode
+	 * b111 = 12bpp 4:4:4 mode.
+	 */
+
+	int bpp_pl110 = 0;
+	switch (bpp_pl111) {
+	case 0:
+		bpp_pl110 = 0;
+		break;
+	case 1:
+		bpp_pl110 = 1;
+		break;
+	case 2:
+		bpp_pl110 = 2;
+		break;
+	case 3:
+		bpp_pl110 = 3;
+		break;
+	case 4:
+		bpp_pl110 = 4;
+		break;
+	case 5:
+		bpp_pl110 = 5;
+		break;
+	case 6:
+	case 7:
+		bpp_pl110 = 4;
+		break;
+	default:
+		hw_error("pl111 bpp value provided is not correct: %x\n", bpp_pl111);
+	}
+
+	(*pl111_ctrlreg) = (*pl111_ctrlreg) | (bpp_pl110 << 1);
+}
 
 /* The Arm documentation (DDI0224C) says the CLDC on the Versatile board
    has a different ID.  However Linux only looks for the normal ID.  */
@@ -325,6 +394,9 @@ static void pl110_write(void *opaque, target_phys_addr_t offset,
         if (s->versatile)
             goto imsc;
     control:
+	if(s->using_pl111)
+		pl111_to_pl110_ctrlreg_map(&val);
+
         s->cr = val;
         s->bpp = (val >> 1) & 7;
         if (pl110_enabled(s)) {
@@ -375,11 +447,19 @@ static int pl110_versatile_init(SysBusDevice *dev)
     return pl110_init(dev);
 }
 
+static int pl111_init(SysBusDevice *dev)
+{
+	pl110_state *s = FROM_SYSBUS(pl110_state, dev);
+	s->using_pl111 = 1;
+	return pl110_init(dev);
+}
+
 static void pl110_register_devices(void)
 {
     sysbus_register_dev("pl110", sizeof(pl110_state), pl110_init);
     sysbus_register_dev("pl110_versatile", sizeof(pl110_state),
                         pl110_versatile_init);
+    sysbus_register_dev("pl111", sizeof(pl110_state), pl111_init);
 }
 
 device_init(pl110_register_devices)

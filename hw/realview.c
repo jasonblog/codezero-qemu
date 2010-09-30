@@ -451,6 +451,7 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
     uint32_t proc_id = 0;
     uint32_t sys_id;
     ram_addr_t low_ram_size;
+    ram_addr_t video_ram_offset;
 
     if (!cpu_model) {
         cpu_model = "cortex-a9";
@@ -489,6 +490,9 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
     cpu_register_physical_memory(0x60000000, ram_size,
                                      ram_offset | IO_MEM_RAM);
 
+    video_ram_offset = qemu_ram_alloc(0x20000000);
+    cpu_register_physical_memory(0x60000000, 0x20000000, video_ram_offset | IO_MEM_RAM);
+
     sys_id = 0x1190f500;
     arm_sysctl_init(0x10000000, sys_id, proc_id);
 
@@ -518,7 +522,7 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
 
     sysbus_create_simple("pl031", 0x10017000, pic[4]); /* RTC */
 
-    sysbus_create_simple("pl110_versatile", 0x1001f000, pic[14]); /* CLCD */
+    sysbus_create_simple("pl111", 0x10020000, pic[14]); /* CLCD */
 
     for(n = 0; n < nb_nics; n++) {
          nd = &nd_table[n];

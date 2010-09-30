@@ -13,6 +13,14 @@
 #include "loader.h"
 #include "elf.h"
 
+/*
+ * 1= running codezero
+ */
+#ifndef __CODEZERO__
+#define __CODEZERO__    1
+int running_codezero;
+#endif
+
 #define KERNEL_ARGS_ADDR 0x100
 #define KERNEL_LOAD_ADDR 0x00010000
 #define INITRD_LOAD_ADDR 0x00800000
@@ -245,6 +253,9 @@ void arm_load_kernel(CPUState *env, struct arm_boot_info *info)
         exit(1);
     }
     info->entry = entry;
+    if (!is_linux)
+	    running_codezero = 1;
+
 //    if (is_linux) {
         if (info->initrd_filename) {
             initrd_size = load_image_targphys(info->initrd_filename,

@@ -8,6 +8,7 @@
 #include "helpers.h"
 #include "qemu-common.h"
 #include "host-utils.h"
+#include <hw/arm-misc.h>
 #if !defined(CONFIG_USER_ONLY)
 #include "hw/loader.h"
 #endif
@@ -130,7 +131,7 @@ static void cpu_reset_model_id(CPUARMState *env, uint32_t id)
         env->cp15.c0_clid = (1 << 27) | (1 << 24) | 3;
         env->cp15.c0_ccsid[0] = 0xe00fe015; /* 16k L1 dcache. */
         env->cp15.c0_ccsid[1] = 0x200fe015; /* 16k L1 icache. */
-        break;
+	break;
     case ARM_CPUID_CORTEXM3:
         set_feature(env, ARM_FEATURE_V6);
         set_feature(env, ARM_FEATURE_THUMB2);
@@ -1177,6 +1178,11 @@ static inline int get_phys_addr(CPUState *env, uint32_t address,
     if (address < 0x02000000)
         address += env->cp15.c13_fcse;
 
+    /* This is a hack for codezero */
+    if (running_codezero)
+    	env->cp15.c1_sys = env->cp15.c1_sys | (1 << 23);
+
+
     if ((env->cp15.c1_sys & 1) == 0) {
         /* MMU/MPU disabled.  */
         *phys_ptr = address;
@@ -1188,9 +1194,11 @@ static inline int get_phys_addr(CPUState *env, uint32_t address,
 	return get_phys_addr_mpu(env, address, access_type, is_user, phys_ptr,
 				 prot);
     } else if (env->cp15.c1_sys & (1 << 23)) {
+	//fprintf(stdout, "get_phys_addr_v6 0x%x\n", env->cp15.c1_sys);
         return get_phys_addr_v6(env, address, access_type, is_user, phys_ptr,
                                 prot, page_size);
     } else {
+	//fprintf(stdout, "get_phys_addr_v5 0x%x\n", env->cp15.c1_sys);
         return get_phys_addr_v5(env, address, access_type, is_user, phys_ptr,
                                 prot, page_size);
     }
@@ -1558,15 +1566,20 @@ void HELPER(set_cp15)(CPUState *env, uint32_t insn, uint32_t val)
                 break;
             default:
                 goto bad_reg;
-            }
+	    }
         }
         break;
     }
     return;
 bad_reg:
+    // This is a hack added by Amit Mahajan to make vanilla vx-linux work
+#if 0
     /* ??? For debugging only.  Should raise illegal instruction exception.  */
     cpu_abort(env, "Unimplemented cp15 register write (c%d, c%d, {%d, %d})\n",
               (insn >> 16) & 0xf, crm, op1, op2);
+#else
+    fprintf(stdout, "CP15 hack by Amit Mahajan\n");
+#endif
 }
 
 uint32_t HELPER(get_cp15)(CPUState *env, uint32_t insn)
