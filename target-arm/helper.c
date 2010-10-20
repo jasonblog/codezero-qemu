@@ -1578,7 +1578,8 @@ bad_reg:
     cpu_abort(env, "Unimplemented cp15 register write (c%d, c%d, {%d, %d})\n",
               (insn >> 16) & 0xf, crm, op1, op2);
 #else
-    fprintf(stdout, "CP15 hack by Amit Mahajan\n");
+    //fprintf(stdout, "CP15 hack by Amit Mahajan\n");
+    return;
 #endif
 }
 
