@@ -519,6 +519,8 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
 
     sysbus_create_simple("sp804", 0x10011000, pic[2]);
     sysbus_create_simple("sp804", 0x10012000, pic[3]);
+    //NEW TIMER
+    sysbus_create_simple("sp804", 0x100e4000, pic[80]);
 
     sysbus_create_simple("pl031", 0x10017000, pic[4]); /* RTC */
 
