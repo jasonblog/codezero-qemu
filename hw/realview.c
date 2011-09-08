@@ -468,7 +468,9 @@ static void realview_vx_a9_init(ram_addr_t ram_size,
         }
     }
 
-    proc_id = 0x0cffffff;
+   // Linaro  uses this 0x0c000191
+   proc_id = 0x0c000191;
+    //proc_id = 0x0cffffff;
 
     ram_offset = qemu_ram_alloc(ram_size);
     cpu_register_physical_memory(0x60000000, ram_size,

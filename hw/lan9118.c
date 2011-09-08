@@ -785,6 +785,8 @@ static void do_mac_write(lan9118_state *s, int reg, uint32_t val)
     case MAC_FLOW:
         s->mac_flow = val & 0xffff0000;
         break;
+    case MAC_VLAN1:
+	break;
     default:
         hw_error("lan9118: Unimplemented MAC register write: %d = 0x%x\n",
                  s->mac_cmd & 0xf, val);
